@@ -34,7 +34,11 @@ class VigenereCipher:
         str
             The shifted letter.
         """
-        shifted_letter = ''
+        if not forward:
+            shift = -shift
+        position = ord(letter) - self.offset          # 0 (A) to 25 (Z)
+        new_position = (position + shift) % 26        # wrap around the alphabet
+        shifted_letter = chr(new_position + self.offset)
         return shifted_letter
 
     def __generate_shift_list(self, plaintext_length: int):
@@ -58,8 +62,20 @@ class VigenereCipher:
         list
             A list of shifts (integers).
         """
-        shift_list = []
+        # Only use the letters of the keyword
+        key_letters = ''.join(c for c in self.keyword if 'A' <= c <= 'Z')
+
+        # Repeat the keyword enough times, then cut it to the exact length needed
+        repeats = plaintext_length // len(key_letters) + 1
+        key_string = (key_letters * repeats)[:plaintext_length]
+
+        # Convert each letter to a number from 0 (A) to 25 (Z)
+        shift_list = [ord(c) - self.offset for c in key_string]
         return shift_list
+
+    def __clean(self, text: str):
+        """Convert to uppercase and keep only the letters A-Z."""
+        return ''.join(c for c in text.upper() if 'A' <= c <= 'Z')
 
     def encrypt(self, plaintext: str):
         """
@@ -82,7 +98,12 @@ class VigenereCipher:
         str
             The ciphertext string.
         """
+        plaintext = self.__clean(plaintext)
+        shift_list = self.__generate_shift_list(len(plaintext))
+
         ciphertext = ''
+        for i in range(len(plaintext)):
+            ciphertext += self.__shift_letter(plaintext[i], shift_list[i], True)
         return ciphertext
 
     def decrypt(self, ciphertext: str):
@@ -109,7 +130,12 @@ class VigenereCipher:
         str
             The plaintext string.
         """
+        ciphertext = self.__clean(ciphertext)
+        shift_list = self.__generate_shift_list(len(ciphertext))
+
         plaintext = ''
+        for i in range(len(ciphertext)):
+            plaintext += self.__shift_letter(ciphertext[i], shift_list[i], False)
         return plaintext
 
 
